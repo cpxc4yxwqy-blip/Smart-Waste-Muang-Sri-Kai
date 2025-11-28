@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PwaUpdateToast from './components/PwaUpdateToast';
-import Dashboard from './components/Dashboard';
-import DataEntryForm from './components/DataEntryForm';
-import AnalysisReport from './components/AnalysisReport';
-import StaffRegistry from './components/StaffRegistry';
+import ReactSuspense from 'react';
+import { analytics } from './services/analytics';
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const DataEntryForm = React.lazy(() => import('./components/DataEntryForm'));
+const AnalysisReport = React.lazy(() => import('./components/AnalysisReport'));
+const StaffRegistry = React.lazy(() => import('./components/StaffRegistry'));
+const AdminPushPanel = React.lazy(() => import('./components/AdminPushPanel'));
 import { WasteRecord, AuditLog, IdentityProfile } from './types';
+import { requestNotifications } from './services/notifications';
+import { subscribeUser, unsubscribeUser, getExistingSubscription } from './services/pushSubscription';
 import { Menu, Leaf, Bookmark } from 'lucide-react';
 
 // Mock Data for first-time load only (Updated with Composition)
@@ -60,6 +65,7 @@ function App() {
     if (confirm('คำเตือน: การกระทำนี้จะลบข้อมูล "ทั้งหมด" ในระบบให้กลับเป็นค่าเริ่มต้น (Factory Reset)\n\n- ประวัติการบันทึกขยะจะหายไป\n- ทะเบียนบุคลากรจะถูกรีเซ็ต\n- รายการที่บันทึกไว้จะหายไป\n\nคุณแน่ใจหรือไม่?')) {
         if(confirm('ยืนยันครั้งสุดท้าย: ต้องการลบข้อมูลจริงๆ ใช่หรือไม่?')) {
             localStorage.clear();
+            analytics.systemReset();
             window.location.reload();
         }
     }
@@ -83,6 +89,7 @@ function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    analytics.backupDownloaded(records.length);
   };
 
   const handleRestoreData = (file: File) => {
@@ -104,6 +111,7 @@ function App() {
         localStorage.setItem('waste_bookmarks', JSON.stringify(data.bookmarks || []));
 
         alert('กู้คืนข้อมูลสำเร็จ ระบบจะทำการรีโหลดหน้าจอ');
+        analytics.restoreSuccess(data.records?.length || 0);
         window.location.reload();
       } catch (err) {
         alert('เกิดข้อผิดพลาด: ไฟล์ Backup ไม่ถูกต้อง หรือเสียหาย');
@@ -120,6 +128,7 @@ function App() {
     setSavedIdentities(prev => {
       const exists = prev.some(id => id.name === name && id.position === position);
       if (exists) return prev;
+      analytics.identityAdded(name);
       return [...prev, { name, position }];
     });
   };
@@ -165,9 +174,11 @@ function App() {
         const updatedRecords = [...prev];
         updatedRecords[existingIndex] = { ...record, id: prev[existingIndex].id }; 
         addAuditLog('UPDATE', `แก้ไขข้อมูลเดือน ${record.month}/${record.year}`, record.recorderName || 'Unknown');
+        analytics.recordUpdated(record.month, record.year);
         return updatedRecords;
       } else {
         addAuditLog('ADD', `บันทึกข้อมูลเดือน ${record.month}/${record.year}`, record.recorderName || 'Unknown');
+        analytics.recordAdded(record.month, record.year, record.amountKg);
         return [...prev, record];
       }
     });
@@ -186,6 +197,7 @@ function App() {
     });
     newRecords.forEach(r => { if (r.recorderName) updateIdentities(r.recorderName, r.recorderPosition || '-'); });
     addAuditLog('IMPORT', `นำเข้าไฟล์ CSV จำนวน ${newRecords.length} รายการ`, newRecords[0]?.recorderName || 'User');
+    analytics.recordImported(newRecords.length);
     setCurrentView('dashboard');
   };
 
@@ -193,6 +205,37 @@ function App() {
     const newBookmark = { year, date: new Date().toLocaleString('th-TH') };
     setBookmarks(prev => [...prev, newBookmark]);
     alert(`บันทึกมุมมองปี ${year} ไว้ในรายการที่บันทึกแล้ว`);
+    analytics.bookmarkAdded(year);
+  };
+
+  // Notifications scaffold
+  const [notifPermission, setNotifPermission] = useState<string>(typeof Notification !== 'undefined' ? Notification.permission : 'default');
+  const [pushSubscribed, setPushSubscribed] = useState<boolean>(false);
+  const [pushRole, setPushRole] = useState<string>('viewer');
+
+  useEffect(() => {
+    getExistingSubscription().then(sub => setPushSubscribed(!!sub));
+  }, []);
+  // Listen for SW messages indicating subscription expiry
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handler = (e: MessageEvent) => {
+        if (e.data?.type === 'PUSH_SUBSCRIPTION_EXPIRED') {
+          setPushSubscribed(false);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, []);
+  const enableNotifications = async () => {
+    const res = await requestNotifications();
+    setNotifPermission(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
+    if (res.granted) {
+      alert('เปิดใช้งานการแจ้งเตือนแล้ว');
+    } else if (res.supported) {
+      alert('ระบบไม่ได้รับอนุญาตให้ส่งการแจ้งเตือน');
+    }
   };
 
   return (
@@ -234,6 +277,7 @@ function App() {
                     {currentView === 'entry' && 'Data Entry'}
                     {currentView === 'report' && 'Smart AI Report'}
                     {currentView === 'registry' && 'Staff Registry'}
+                    {currentView === 'push' && 'Push Admin'}
                     {currentView === 'saved' && 'Saved Bookmarks'}
                 </h1>
                 <p className="text-slate-500 font-medium flex items-center gap-2">
@@ -245,11 +289,36 @@ function App() {
               <div className="flex items-center gap-3">
                   <div className="text-right">
                       <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">System Status</div>
-                      <div className="text-sm font-bold text-emerald-600 flex items-center justify-end gap-1">
-                          Online <span className="relative flex h-2.5 w-2.5 ml-1">
+                      <div className="text-sm font-bold text-emerald-600 flex items-center justify-end gap-3">
+                          <span className="flex items-center gap-1">Online <span className="relative flex h-2.5 w-2.5 ml-1">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                          </span>
+                          </span></span>
+                          {notifPermission !== 'granted' ? (
+                            <button onClick={enableNotifications} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white/60 border border-emerald-200 text-emerald-700 hover:bg-white transition-colors">
+                              เปิดแจ้งเตือน
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {!pushSubscribed && (
+                                <>
+                                  <select value={pushRole} onChange={(e)=> setPushRole(e.target.value)} className="px-2 py-1 text-xs font-bold rounded-lg bg-white/70 border border-emerald-200 text-emerald-700">
+                                    <option value="viewer">ทั่วไป</option>
+                                    <option value="staff">เจ้าหน้าที่</option>
+                                    <option value="admin">ผู้ดูแล</option>
+                                  </select>
+                                  <button onClick={async () => { await subscribeUser('user-' + Date.now(), pushRole); setPushSubscribed(true); }} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+                                    สมัครรับแจ้งเตือน
+                                  </button>
+                                </>
+                              )}
+                              {pushSubscribed && (
+                                <button onClick={async () => { await unsubscribeUser(); setPushSubscribed(false); }} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+                                  ยกเลิกแจ้งเตือน
+                                </button>
+                              )}
+                            </div>
+                          )}
                       </div>
                   </div>
               </div>
@@ -257,11 +326,14 @@ function App() {
 
             {/* View Content Container with Animation */}
             <div key={currentView} className="animate-slide-up">
+              <React.Suspense fallback={<div className="text-sm text-slate-500 p-6">Loading view...</div>}>
                 {currentView === 'dashboard' && <Dashboard records={records} onBookmark={handleBookmark} auditLogs={auditLogs} onNavigate={setCurrentView} />}
                 {currentView === 'entry' && <DataEntryForm onAddRecord={handleAddRecord} onImportRecords={handleImportRecords} savedIdentities={savedIdentities} existingRecords={records} />}
                 {currentView === 'report' && <AnalysisReport records={records} savedIdentities={savedIdentities} onSaveIdentity={updateIdentities} />}
                 {currentView === 'registry' && <StaffRegistry identities={savedIdentities} onAddIdentity={updateIdentities} onRemoveIdentities={removeIdentities} onEditIdentity={handleEditIdentity} onClearRegistry={handleClearRegistry} />}
-                {currentView === 'saved' && (
+                {currentView === 'push' && <AdminPushPanel />}
+              </React.Suspense>
+              {currentView === 'saved' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                     {bookmarks.length === 0 ? (
                       <div className="col-span-full glass-panel rounded-3xl p-16 text-center border-dashed border-2 border-slate-300/50">

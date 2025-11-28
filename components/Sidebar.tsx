@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { LayoutDashboard, FilePlus, FileText, Leaf, ChevronRight, Bookmark, Users, RotateCcw, Download, Upload, Settings, Key, X, Save } from 'lucide-react';
+import { LayoutDashboard, FilePlus, FileText, Leaf, ChevronRight, Bookmark, Users, RotateCcw, Download, Upload, Settings, Key, X, Save, Bell } from 'lucide-react';
 
 interface SidebarProps {
   currentView: string;
@@ -34,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     { id: 'entry', label: 'Data Entry', sub: 'บันทึกข้อมูล', icon: <FilePlus size={20} /> },
     { id: 'report', label: 'AI Report', sub: 'รายงานผู้บริหาร', icon: <FileText size={20} /> },
     { id: 'registry', label: 'Staff', sub: 'ทะเบียนบุคลากร', icon: <Users size={20} /> },
+    { id: 'push', label: 'Push Admin', sub: 'ส่งการแจ้งเตือน', icon: <Bell size={20} /> },
     { id: 'saved', label: 'Bookmarks', sub: 'รายการที่บันทึก', icon: <Bookmark size={20} /> },
   ];
 

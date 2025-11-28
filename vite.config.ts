@@ -2,10 +2,12 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      base: '/Smart-Waste-Muang-Sri-Kai/',
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -13,8 +15,11 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
+          strategies: 'injectManifest',
+          srcDir: 'src',
+          filename: 'sw.ts',
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.ico', 'robots.txt'],
+          includeAssets: ['favicon.ico', 'robots.txt', 'offline.html'],
           manifest: {
             name: 'Si Khai Waste Smart Dashboard',
             short_name: 'WasteDash',
@@ -33,6 +38,12 @@ export default defineConfig(({ mode }) => {
                 src: '/icons/icon-512.png',
                 sizes: '512x512',
                 type: 'image/png'
+              },
+              {
+                src: '/icons/icon-512.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'any maskable'
               }
             ]
           }
@@ -40,7 +51,8 @@ export default defineConfig(({ mode }) => {
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        __APP_VERSION__: JSON.stringify(pkg.version)
       },
       resolve: {
         alias: {

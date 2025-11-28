@@ -1,6 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+// Sentry & Analytics initialization (optional)
+// Provide DSN via VITE_SENTRY_DSN in .env for Sentry activation
+import.meta.env.VITE_SENTRY_DSN && (async () => {
+  try {
+    const SentryMod = await import('@sentry/react');
+    const { BrowserTracing } = await import('@sentry/react');
+    SentryMod.init({
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      integrations: [new BrowserTracing()],
+      tracesSampleRate: 0.2
+    });
+    console.info('Sentry initialized');
+  } catch (e) {
+    console.warn('Sentry initialization failed', e);
+  }
+})();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

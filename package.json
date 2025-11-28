@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "pwa:build": "npm run build",
     "pwa:serve": "npx http-server ./dist -p 3000 --cors",
+    "backend:dev": "node server/mock-push-backend.mjs",
+    "backend:start": "ts-node --transpile-only backend/server.ts",
     "deploy": "npm run build && npx gh-pages -d dist",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
@@ -17,23 +19,30 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "dotenv": "^17.2.3",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-is": "^18.2.0",
     "react-markdown": "^10.1.0",
-    "recharts": "^3.4.1",
-    "react-is": "^18.2.0"
+    "recharts": "^3.4.1"
   },
   "devDependencies": {
+    "@sentry/react": "^7.118.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "gh-pages": "^5.0.0",
+    "http-server": "^14.1.1",
+    "sharp": "^0.33.5",
+    "standard-version": "^9.5.0",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^0.18.2",
-    "http-server": "^14.1.1",
-    "gh-pages": "^5.0.0",
-    "standard-version": "^9.5.0",
-    "@sentry/react": "^7.118.0",
-    "sharp": "^0.33.5"
+    "web-push": "^3.6.7"
   }
 }

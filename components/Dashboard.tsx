@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ComposedChart, Area, PieChart, Pie, Cell, Legend, ReferenceLine
-} from 'recharts';
+// Recharts moved into lazy subcomponents to split bundle
+import ReactLazy from 'react';
+const MonthlyTrendChart = ReactLazy.lazy(() => import('./MonthlyTrendChart'));
+const CompositionPieChart = ReactLazy.lazy(() => import('./CompositionPieChart'));
 import { WasteRecord, THAI_MONTHS, THAI_MONTHS_ABBR, AuditLog } from '../types';
 import {
   Scale, Filter, Sparkles, ArrowUpRight, ArrowDownRight, Clock,
@@ -194,26 +194,7 @@ const Dashboard: React.FC<DashboardProps> = ({ records, onNavigate }) => {
     setInsightLoading(false);
   };
 
-  // Custom Tooltip for Recharts
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-panel p-4 rounded-2xl shadow-xl border border-white/60">
-          <p className="text-slate-800 font-bold text-sm mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2 text-xs mb-1">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-slate-500">{entry.name}:</span>
-              <span className="font-bold text-slate-700">
-                {entry.value.toLocaleString(undefined, { minimumFractionDigits: 2 })} {entry.unit || 'ตัน'}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  // Tooltip moved into subcomponent implementation
 
   return (
     <div className="space-y-8 pb-20 animate-slide-up">
@@ -435,98 +416,15 @@ const Dashboard: React.FC<DashboardProps> = ({ records, onNavigate }) => {
 
           {/* Charts Layout (Bento Grid) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Trend Chart */}
-            <div className="glass-panel rounded-3xl p-6 lg:col-span-2 flex flex-col">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-emerald-500 rounded-full shadow-glow"></div>
-                    แนวโน้มรายเดือน
-                  </h3>
-                  <p className="text-xs text-slate-400 pl-3 mt-1 font-medium">ปริมาณขยะ (ตัน) แยกรายเดือน</p>
-                </div>
-              </div>
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorTon" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorCompare" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
-                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+            {/* Main Trend Chart (Lazy) */}
+            <ReactLazy.Suspense fallback={<div className="glass-panel rounded-3xl p-6 lg:col-span-2">Loading chart...</div>}>
+              <MonthlyTrendChart chartData={chartData} compositionData={compositionData} isCompareMode={isCompareMode} selectedYear={selectedYear} compareYear={compareYear} />
+            </ReactLazy.Suspense>
 
-                    {!isCompareMode && compositionData.length > 0 ? (
-                      <>
-                        <Bar dataKey="genTon" stackId="a" fill="#60a5fa" name="ทั่วไป" radius={[0, 0, 0, 0]} barSize={30} />
-                        <Bar dataKey="orgTon" stackId="a" fill="#34d399" name="อินทรีย์" barSize={30} />
-                        <Bar dataKey="recTon" stackId="a" fill="#fbbf24" name="รีไซเคิล" barSize={30} />
-                        <Bar dataKey="hazTon" stackId="a" fill="#f87171" name="อันตราย" radius={[6, 6, 0, 0]} barSize={30} />
-                      </>
-                    ) : (
-                      <>
-                        <Area type="monotone" dataKey="amountTon" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorTon)" name={`ปี ${selectedYear}`} />
-                        {isCompareMode && <Area type="monotone" dataKey="compareAmountTon" stroke="#818cf8" strokeWidth={3} strokeDasharray="5 5" fill="url(#colorCompare)" name={`ปี ${compareYear}`} />}
-                      </>
-                    )}
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Pie Chart - Composition */}
-            <div className="glass-panel rounded-3xl p-6 flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-10 -mt-10 opacity-50"></div>
-              <div className="mb-4 relative z-10">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-blue-500 rounded-full shadow-glow"></div>
-                  องค์ประกอบขยะ
-                </h3>
-                <p className="text-xs text-slate-400 pl-3 mt-1 font-medium">สัดส่วนแยกตามประเภท</p>
-              </div>
-              <div className="flex-1 min-h-[250px] relative flex items-center justify-center">
-                {compositionData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={compositionData}
-                        innerRadius={70}
-                        outerRadius={90}
-                        paddingAngle={8}
-                        dataKey="value"
-                        stroke="none"
-                        cornerRadius={8}
-                      >
-                        {compositionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: 'drop-shadow(0px 6px 10px rgba(0,0,0,0.1))' }} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        iconType="circle"
-                        iconSize={8}
-                        formatter={(value) => <span className="text-xs font-bold text-slate-600 ml-1">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-slate-300 flex flex-col items-center justify-center h-full">
-                    <div className="p-4 bg-slate-50 rounded-full mb-2"><PieIcon size={32} className="opacity-50" /></div>
-                    <p className="text-xs font-medium">ไม่มีข้อมูลองค์ประกอบขยะ</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Pie Chart - Composition (Lazy) */}
+            <ReactLazy.Suspense fallback={<div className="glass-panel rounded-3xl p-6">Loading composition...</div>}>
+              <CompositionPieChart compositionData={compositionData} />
+            </ReactLazy.Suspense>
           </div>
 
           {/* Data Table */}
