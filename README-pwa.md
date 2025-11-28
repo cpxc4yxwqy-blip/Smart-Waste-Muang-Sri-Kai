@@ -31,3 +31,5 @@ Notes
 Optional: Using PWABuilder
 
 If you want platform-specific packages (Windows/MSIX, Android APK, etc.), use https://pwabuilder.com/ and provide your hosted site URL or upload the generated manifest. I can help with that step if you want.
+
+Trigger deploy: 2025-11-28T07:50:46.6833315+07:00
