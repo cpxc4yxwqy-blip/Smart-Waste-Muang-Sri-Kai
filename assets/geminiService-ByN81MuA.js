@@ -1,4 +1,4 @@
-import{N as K}from"./vendor-wOfPeI0w.js";import{T as l}from"./types-BFuqyHc6.js";const p=()=>localStorage.getItem("gemini_api_key")||void 0,y=new K({apiKey:p()||""}),f=async o=>{if(!p())return"กรุณาตั้งค่า API Key ที่เมนู Settings (รูปเฟือง) ก่อนใช้งาน";const a=[...o].sort((c,u)=>u.timestamp-c.timestamp).slice(0,3);if(a.length<2)return"ข้อมูลยังไม่เพียงพอสำหรับการวิเคราะห์เบื้องต้น";const t=a[0],i=a[1],e=(t.amountKg-i.amountKg)/i.amountKg*100,n=t.population>0?t.amountKg/t.population/30:0,g=`
+import{N as K}from"./vendor-BO12qksW.js";import{T as l}from"./types-BFuqyHc6.js";const p=()=>localStorage.getItem("gemini_api_key")||void 0,y=new K({apiKey:p()||""}),f=async o=>{if(!p())return"กรุณาตั้งค่า API Key ที่เมนู Settings (รูปเฟือง) ก่อนใช้งาน";const a=[...o].sort((c,u)=>u.timestamp-c.timestamp).slice(0,3);if(a.length<2)return"ข้อมูลยังไม่เพียงพอสำหรับการวิเคราะห์เบื้องต้น";const t=a[0],i=a[1],e=(t.amountKg-i.amountKg)/i.amountKg*100,n=t.population>0?t.amountKg/t.population/30:0,g=`
     คุณคือผู้เชี่ยวชาญด้านการจัดการสิ่งแวดล้อม ของเทศบาลตำบลเมืองศรีไค
     
     ข้อมูลสถานการณ์ล่าสุด (${l[t.month-1]} ${t.year}):
