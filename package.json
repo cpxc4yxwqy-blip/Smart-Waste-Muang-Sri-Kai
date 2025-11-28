@@ -1,7 +1,7 @@
 {
   "name": "si-khai-waste-smart-dashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "pwa:build": "npm run build",
     "pwa:serve": "npx http-server ./dist -p 3000 --cors",
-    "deploy": "npm run build && npx gh-pages -d dist"
+    "deploy": "npm run build && npx gh-pages -d dist",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:patch": "standard-version --release-as patch",
+    "icons:generate": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
@@ -27,6 +31,9 @@
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^0.18.2",
     "http-server": "^14.1.1",
-    "gh-pages": "^5.0.0"
+    "gh-pages": "^5.0.0",
+    "standard-version": "^9.5.0",
+    "@sentry/react": "^7.118.0",
+    "sharp": "^0.33.5"
   }
 }
