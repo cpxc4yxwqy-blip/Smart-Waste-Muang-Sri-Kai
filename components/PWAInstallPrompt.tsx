@@ -8,35 +8,58 @@ interface BeforeInstallPromptEvent extends Event {
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Check if already installed/running as standalone
+    const standalone = window.matchMedia('(display-mode: standalone)').matches 
+      || (window.navigator as any).standalone 
+      || document.referrer.includes('android-app://');
+    
+    setIsStandalone(standalone);
+
     const handler = (e: Event) => {
       e.preventDefault();
+      console.log('beforeinstallprompt event fired');
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallButton(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
+    // For debugging: show button even without event (in development)
+    if (!standalone && import.meta.env.DEV) {
+      setTimeout(() => {
+        console.log('Development mode: showing install button for testing');
+        setShowInstallButton(true);
+      }, 2000);
     }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Fallback: show manual instructions
+      alert('กรุณาคลิกที่ไอคอน "ติดตั้ง" ในแถบ address bar ของ Chrome/Edge\n\nหรือเปิดเมนู (⋮) → ติดตั้ง "Si Khai Waste Smart Dashboard"');
+      return;
+    }
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+    console.log('Install prompt outcome:', outcome);
 
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
       setShowInstallButton(false);
     }
   };
+
+  // Don't show if already installed or in standalone mode
+  if (isStandalone) {
+    console.log('App is running in standalone mode');
+    return null;
+  }
 
   if (!showInstallButton) return null;
 

@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { LayoutDashboard, FilePlus, FileText, Leaf, ChevronRight, Bookmark, Users, RotateCcw, Download, Upload, Settings, Key, X, Save, Bell } from 'lucide-react';
+import { LayoutDashboard, FilePlus, FileText, Leaf, ChevronRight, Bookmark, Users, RotateCcw, Download, Upload, Settings, Key, X, Save, Bell, Smartphone } from 'lucide-react';
 
 interface SidebarProps {
   currentView: string;
@@ -16,11 +16,41 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [canInstall, setCanInstall] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
     if (savedKey) setApiKey(savedKey);
+
+    // Listen for install prompt
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Check if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || (window.navigator as any).standalone;
+    if (isStandalone) setCanInstall(false);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) {
+      alert('กรุณาเปิดใน Chrome/Edge และคลิกไอคอน "ติดตั้ง" ในแถบ address bar\n\nหรือเปิดเมนู (⋮) → ติดตั้ง "Si Khai Waste Smart Dashboard"');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setCanInstall(false);
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleSaveSettings = () => {
     localStorage.setItem('gemini_api_key', apiKey);
@@ -148,6 +178,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
         {/* Footer Tools */}
         <div className="p-5 mt-auto bg-white/40 backdrop-blur-md border-t border-white/50">
+          {/* PWA Install Button */}
+          {canInstall && (
+            <button
+              onClick={handleInstallApp}
+              className="w-full mb-3 flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 group animate-pulse-slow"
+            >
+              <Smartphone size={18} className="group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-bold">ติดตั้งแอป</span>
+            </button>
+          )}
+          
           <div className="grid grid-cols-2 gap-3 mb-3">
             <button
               onClick={onBackup}

@@ -24,10 +24,11 @@ export default defineConfig(({ mode }) => {
             name: 'Si Khai Waste Smart Dashboard',
             short_name: 'WasteDash',
             description: 'Dashboard for Si Khai waste management',
-            theme_color: '#ffffff',
+            theme_color: '#10b981',
             background_color: '#ffffff',
             display: 'standalone',
-            start_url: '/',
+            start_url: '/Smart-Waste-Muang-Sri-Kai/',
+            scope: '/Smart-Waste-Muang-Sri-Kai/',
             icons: [
               {
                 src: '/icons/icon-192.png',
