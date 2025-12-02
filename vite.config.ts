@@ -7,7 +7,7 @@ import pkg from './package.json';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/Smart-Waste-Muang-Sri-Kai/',
+      base: process.env.ELECTRON ? './' : '/Smart-Waste-Muang-Sri-Kai/',
       server: {
         port: 3000,
         host: '0.0.0.0',

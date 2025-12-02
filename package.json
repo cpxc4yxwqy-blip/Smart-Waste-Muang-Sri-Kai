@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:electron": "set ELECTRON=true && vite build",
     "preview": "vite preview",
     "pwa:build": "npm run build",
     "pwa:serve": "npx http-server ./dist -p 3000 --cors",
@@ -15,7 +16,10 @@
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:patch": "standard-version --release-as patch",
-    "icons:generate": "node scripts/generate-icons.mjs"
+    "icons:generate": "node scripts/generate-icons.mjs",
+    "electron:install": "cd electron && npm install",
+    "electron:dev": "npm run build:electron && cd electron && npm start",
+    "electron:build": "npm run build:electron && cd electron && npm run build:win"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
