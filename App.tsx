@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PwaUpdateToast from './components/PwaUpdateToast';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import ReactSuspense from 'react';
 import { analytics } from './services/analytics';
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
@@ -371,6 +372,7 @@ function App() {
         </main>
       </div>
       <PwaUpdateToast />
+      <PWAInstallPrompt />
     </div>
   );
 }
