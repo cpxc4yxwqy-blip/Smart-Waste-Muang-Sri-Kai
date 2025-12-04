@@ -1,4 +1,4 @@
-import{a2 as y}from"./vendor-D6w34f8l.js";import{T as l}from"./types-BFuqyHc6.js";const m=()=>localStorage.getItem("gemini_api_key")||"your_api_key_here",g=new y({apiKey:m()}),x=async r=>{m();const n=[...r].sort((i,u)=>u.timestamp-i.timestamp).slice(0,3);if(n.length<2)return"ข้อมูลยังไม่เพียงพอสำหรับการวิเคราะห์เบื้องต้น";const t=n[0],s=n[1],e=(t.amountKg-s.amountKg)/s.amountKg*100,o=t.population>0?t.amountKg/t.population/30:0,p=`
+import{a2 as y}from"./vendor-suozX6Vy.js";import{T as l}from"./types-BFuqyHc6.js";const m=()=>localStorage.getItem("gemini_api_key")||"your_api_key_here",g=new y({apiKey:m()}),x=async r=>{m();const n=[...r].sort((i,u)=>u.timestamp-i.timestamp).slice(0,3);if(n.length<2)return"ข้อมูลยังไม่เพียงพอสำหรับการวิเคราะห์เบื้องต้น";const t=n[0],s=n[1],e=(t.amountKg-s.amountKg)/s.amountKg*100,o=t.population>0?t.amountKg/t.population/30:0,p=`
     คุณคือผู้เชี่ยวชาญด้านการจัดการสิ่งแวดล้อม ของเทศบาลตำบลเมืองศรีไค
     
     ข้อมูลสถานการณ์ล่าสุด (${l[t.month-1]} ${t.year}):
