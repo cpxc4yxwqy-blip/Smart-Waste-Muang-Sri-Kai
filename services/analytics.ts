@@ -6,7 +6,8 @@ export type AnalyticsEvent =
   | 'backup_download'
   | 'restore_success'
   | 'bookmark_add'
-  | 'identity_add';
+  | 'identity_add'
+  | 'google_sheets_sync';
 
 function send(event: AnalyticsEvent, data: Record<string, any> = {}) {
   try {
@@ -31,4 +32,5 @@ export const analytics = {
   restoreSuccess: (count: number) => send('restore_success', { count }),
   bookmarkAdded: (year: number) => send('bookmark_add', { year }),
   identityAdded: (name: string) => send('identity_add', { name }),
+  customEvent: (event: string, data?: Record<string, any>) => send(event as AnalyticsEvent, data || {}),
 };

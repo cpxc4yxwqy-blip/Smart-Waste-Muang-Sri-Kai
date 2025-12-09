@@ -3,15 +3,18 @@ import React, { useMemo, useState, useEffect } from 'react';
 import ReactLazy from 'react';
 const MonthlyTrendChart = ReactLazy.lazy(() => import('./MonthlyTrendChart'));
 const CompositionPieChart = ReactLazy.lazy(() => import('./CompositionPieChart'));
+const WasteBarChart = ReactLazy.lazy(() => import('./WasteBarChart'));
+const PerCapitaChart = ReactLazy.lazy(() => import('./PerCapitaChart'));
+const ComparisonLineChart = ReactLazy.lazy(() => import('./ComparisonLineChart'));
+const CompositionRadarChart = ReactLazy.lazy(() => import('./CompositionRadarChart'));
 import { WasteRecord, THAI_MONTHS, THAI_MONTHS_ABBR, AuditLog } from '../types';
 import {
   Scale, Filter, Sparkles, ArrowUpRight, ArrowDownRight, Clock,
   CalendarX, Split, PlusCircle, Table as TableIcon, PieChart as PieIcon,
-  Gauge, Coins, Users, Search, Download, Target, TrendingDown, AlertTriangle
+  Gauge, Coins, Users, Search, Download, Target, TrendingDown, AlertTriangle,
+  BarChart3, Activity, Radar
 } from 'lucide-react';
 import { generateDashboardInsight, generateComparisonInsight } from '../services/geminiService';
-
-// ... (keep existing imports)
 
 interface DashboardProps {
   records: WasteRecord[];
@@ -426,6 +429,85 @@ const Dashboard: React.FC<DashboardProps> = ({ records, onNavigate }) => {
               <CompositionPieChart compositionData={compositionData} />
             </ReactLazy.Suspense>
           </div>
+
+          {/* Additional Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Bar Chart - Monthly Comparison */}
+            <div className="glass-panel rounded-3xl p-6 shadow-glass border border-white/60">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <BarChart3 size={20} className="text-emerald-500" />
+                  กราฟแท่ง - ปริมาณรายเดือน
+                </h3>
+              </div>
+              <ReactLazy.Suspense fallback={<div className="h-[300px] flex items-center justify-center text-slate-400">Loading...</div>}>
+                <WasteBarChart data={chartRecords} />
+              </ReactLazy.Suspense>
+            </div>
+
+            {/* Per Capita Trend */}
+            <div className="glass-panel rounded-3xl p-6 shadow-glass border border-white/60">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Activity size={20} className="text-blue-500" />
+                  ขยะต่อหัวประชากร
+                </h3>
+                <span className="text-xs text-slate-500 bg-white/60 px-3 py-1 rounded-full">kg/คน/วัน</span>
+              </div>
+              <ReactLazy.Suspense fallback={<div className="h-[250px] flex items-center justify-center text-slate-400">Loading...</div>}>
+                <PerCapitaChart data={chartRecords} />
+              </ReactLazy.Suspense>
+            </div>
+          </div>
+
+          {/* Comparison Mode Charts */}
+          {isCompareMode && comparisonRecords.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              {/* Year Comparison Line Chart */}
+              <div className="glass-panel rounded-3xl p-6 shadow-glass border border-white/60 lg:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Split size={20} className="text-indigo-500" />
+                    เปรียบเทียบ {selectedYear} vs {compareYear}
+                  </h3>
+                  <span className="text-xs text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full font-bold">รายเดือน</span>
+                </div>
+                <ReactLazy.Suspense fallback={<div className="h-[300px] flex items-center justify-center text-slate-400">Loading...</div>}>
+                  <ComparisonLineChart 
+                    currentData={chartRecords}
+                    compareData={comparisonRecords}
+                    currentYear={selectedYear}
+                    compareYear={compareYear}
+                  />
+                </ReactLazy.Suspense>
+              </div>
+            </div>
+          )}
+
+          {/* Composition Radar Chart */}
+          {compositionData.general + compositionData.organic + compositionData.recycle + compositionData.hazardous > 0 && (
+            <div className="glass-panel rounded-3xl p-6 shadow-glass border border-white/60 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Radar size={20} className="text-purple-500" />
+                  สัดส่วนประเภทขยะ (Radar)
+                </h3>
+                <span className="text-xs text-slate-500 bg-white/60 px-3 py-1 rounded-full">ปี {selectedYear}</span>
+              </div>
+              <div className="flex justify-center">
+                <div className="w-full max-w-md">
+                  <ReactLazy.Suspense fallback={<div className="h-[300px] flex items-center justify-center text-slate-400">Loading...</div>}>
+                    <CompositionRadarChart 
+                      general={compositionData.general}
+                      organic={compositionData.organic}
+                      recycle={compositionData.recycle}
+                      hazardous={compositionData.hazardous}
+                    />
+                  </ReactLazy.Suspense>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Data Table */}
           <div className="glass-panel rounded-3xl overflow-hidden mt-8 shadow-glass border border-white/60">

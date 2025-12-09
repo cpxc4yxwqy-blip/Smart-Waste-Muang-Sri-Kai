@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { WasteRecord, WasteUnit, THAI_MONTHS, IdentityProfile, WasteComposition } from '../types';
-import { Save, RefreshCw, Database, Upload, AlertCircle, PlusCircle, Edit3, User, Briefcase, Dices, FileText, CheckCircle, Info, PieChart, StickyNote, AlertTriangle, Download } from 'lucide-react';
+import { Save, RefreshCw, Database, Upload, AlertCircle, PlusCircle, Edit3, User, Briefcase, Dices, FileText, CheckCircle, Info, PieChart, StickyNote, AlertTriangle, Download, Cloud } from 'lucide-react';
+import { isGoogleSheetsConfigured, saveRecordToSheetsWithRetry } from '../services/googleSheetsService';
 
 interface DataEntryFormProps {
   onAddRecord: (record: WasteRecord, stayOnPage?: boolean) => void;
@@ -45,6 +46,10 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({ onAddRecord, onImportReco
 
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+  const [syncingToSheets, setSyncingToSheets] = useState(false);
+  const [sheetsSyncResult, setSheetsSyncResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const isGoogleSheetsEnabled = isGoogleSheetsConfigured();
 
   useEffect(() => {
     localStorage.setItem('waste_draft_recorder_name', recorderName);
@@ -178,7 +183,7 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({ onAddRecord, onImportReco
     }
   };
 
-  const handleSubmit = (e: React.FormEvent, stayOnPage: boolean = false) => {
+  const handleSubmit = async (e: React.FormEvent, stayOnPage: boolean = false) => {
     e.preventDefault();
 
     // Block submit if warning exists and user hasn't confirmed (simple implementation: just alert)
@@ -187,8 +192,9 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({ onAddRecord, onImportReco
     }
 
     setLoading(true);
+    setSheetsSyncResult(null);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const numericAmount = parseFloat(amount);
       const numericPop = parseInt(population);
 
@@ -217,7 +223,43 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({ onAddRecord, onImportReco
         composition: finalComposition, note: note.trim()
       };
 
+      // บันทึกใน Local Storage
       onAddRecord(newRecord, stayOnPage);
+
+      // พยายามบันทึกไปยัง Google Sheets (ถ้าเปิดใช้งาน)
+      if (isGoogleSheetsEnabled) {
+        try {
+          setSyncingToSheets(true);
+          // แปลง WasteRecord เป็น format ที่ Google Sheets ต้องการ
+          const sheetRecord = {
+            ...newRecord,
+            year: newRecord.year - 543, // แปลงกลับเป็น ค.ศ.
+            generalWaste: (finalComposition?.general || 0) / 1000,
+            organicWaste: (finalComposition?.organic || 0) / 1000,
+            recyclableWaste: (finalComposition?.recycle || 0) / 1000,
+            hazardousWaste: (finalComposition?.hazardous || 0) / 1000,
+            totalWaste: finalAmountKg / 1000,
+            notes: newRecord.note,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: recorderName.trim(),
+            updatedBy: recorderName.trim()
+          };
+          
+          await saveRecordToSheetsWithRetry(sheetRecord as any);
+          setSheetsSyncResult({ success: true, message: '✓ บันทึกไปยัง Google Sheets สำเร็จ' });
+        } catch (error) {
+          console.error('Failed to sync to Google Sheets:', error);
+          const msg = error instanceof Error ? error.message : String(error);
+          setSheetsSyncResult({ 
+            success: false, 
+            message: `⚠ บันทึกใน Local สำเร็จ แต่ไม่สามารถซิงค์ไปยัง Google Sheets ได้: ${msg}` 
+          });
+        } finally {
+          setSyncingToSheets(false);
+        }
+      }
+
       setLoading(false);
 
       if (stayOnPage) {
@@ -513,20 +555,42 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({ onAddRecord, onImportReco
                 </button>
               </div>
 
+              {/* Google Sheets Sync Status */}
+              {isGoogleSheetsEnabled && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl">
+                  <Cloud className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-700">
+                    Google Sheets Sync เปิดใช้งาน
+                  </span>
+                </div>
+              )}
+
+              {/* Sync Result Message */}
+              {sheetsSyncResult && (
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${
+                  sheetsSyncResult.success
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                }`}>
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">{sheetsSyncResult.message}</span>
+                </div>
+              )}
+
               {/* Bottom row - main action buttons */}
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || syncingToSheets}
                   onClick={(e) => handleSubmit(e, false)}
                   className="flex-1 py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {loading ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
-                  {existingRecordId ? 'บันทึกการแก้ไข' : 'บันทึกข้อมูล'}
+                  {loading || syncingToSheets ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
+                  {syncingToSheets ? 'กำลังซิงค์...' : existingRecordId ? 'บันทึกการแก้ไข' : 'บันทึกข้อมูล'}
                 </button>
                 <button
                   type="button"
-                  disabled={loading}
+                  disabled={loading || syncingToSheets}
                   onClick={(e) => handleSubmit(e, true)}
                   className="flex-1 py-3.5 px-6 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-bold hover:bg-emerald-50 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                 >

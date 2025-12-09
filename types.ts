@@ -14,14 +14,38 @@ export interface WasteComposition {
 export interface WasteRecord {
   id: string;
   month: number; // 1-12
-  year: number; // Buddhist Era (e.g., 2567)
-  amountKg: number; // Stored consistently in KG
-  population: number;
-  timestamp: number;
-  recorderName?: string;
-  recorderPosition?: string;
-  composition?: WasteComposition; // New: Waste breakdown
-  note?: string; // New: Remarks/Context
+  year: number; // Buddhist Era (e.g., 2567) or Christian Era (2024)
+  
+  // Individual waste types (in tons)
+  generalWaste?: number;       // ขยะทั่วไป (ตัน)
+  organicWaste?: number;       // ขยะอินทรีย์ (ตัน)
+  recyclableWaste?: number;    // ขยะรีไซเคิล (ตัน)
+  hazardousWaste?: number;     // ขยะอันตราย (ตัน)
+  totalWaste?: number;         // ปริมาณขยะรวม (ตัน)
+  
+  // Legacy support
+  amountKg?: number;           // Stored consistently in KG (for backward compatibility)
+  composition?: WasteComposition;
+  
+  // Demographics
+  population?: number;
+  
+  // Metadata
+  category?: string;           // หมวดหมู่ (e.g., ศูนย์การศึกษา)
+  subCategory?: string;        // หมวดหมู่ย่อย
+  note?: string;               // หมายเหตุ (legacy)
+  notes?: string;              // หมายเหตุ (new)
+  
+  // Timestamps
+  createdAt?: string;          // ISO 8601 date (e.g., 2025-12-04T10:30:00Z)
+  updatedAt?: string;          // ISO 8601 date
+  timestamp?: number;          // Unix timestamp (legacy)
+  
+  // User tracking
+  createdBy?: string;          // ผู้บันทึกข้อมูล
+  updatedBy?: string;          // ผู้แก้ไขล่าสุด
+  recorderName?: string;       // (legacy)
+  recorderPosition?: string;   // (legacy)
 }
 
 export interface AnalysisResponse {
@@ -40,7 +64,7 @@ export interface Notification {
 
 export interface AuditLog {
   id: string;
-  action: 'ADD' | 'UPDATE' | 'DELETE' | 'IMPORT';
+  action: 'ADD' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'AUTO_SYNC_SUCCESS' | 'AUTO_SYNC_FAIL' | 'AUTO_SYNC_RETRY';
   details: string;
   timestamp: number;
   user: string;
