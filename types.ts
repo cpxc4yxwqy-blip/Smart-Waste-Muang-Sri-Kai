@@ -64,7 +64,7 @@ export interface Notification {
 
 export interface AuditLog {
   id: string;
-  action: 'ADD' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'AUTO_SYNC_SUCCESS' | 'AUTO_SYNC_FAIL' | 'AUTO_SYNC_RETRY';
+  action: 'ADD' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'AUTO_SYNC_SUCCESS' | 'AUTO_SYNC_FAIL' | 'AUTO_SYNC_RETRY' | 'AUTO_SYNC_SKIP';
   details: string;
   timestamp: number;
   user: string;
