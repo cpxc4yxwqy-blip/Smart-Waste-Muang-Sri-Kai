@@ -100,6 +100,23 @@ function recordFailure(message: string) {
   }
 }
 
+export function isLockStuck(): boolean {
+  try {
+    const raw = localStorage.getItem(LOCK_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { expiresAt: number; startedAt: number };
+    const now = Date.now();
+    return parsed.expiresAt && parsed.expiresAt <= now;
+  } catch {
+    return false;
+  }
+}
+
+export function clearStuckLock(): void {
+  localStorage.removeItem(LOCK_KEY);
+  console.log('✓ cleared stuck sync lock');
+}
+
 function acquireLockOrThrow() {
   try {
     const raw = localStorage.getItem(LOCK_KEY);
@@ -108,6 +125,10 @@ function acquireLockOrThrow() {
       const parsed = JSON.parse(raw) as { expiresAt: number; startedAt: number };
       if (parsed.expiresAt && parsed.expiresAt > now) {
         throw new Error('กำลังซิงค์อยู่แล้ว โปรดลองใหม่อีกครั้งภายหลัง');
+      } else if (parsed.expiresAt && parsed.expiresAt <= now) {
+        // auto-cleanup stale lock
+        localStorage.removeItem(LOCK_KEY);
+        console.warn('✓ cleaned up stale sync lock');
       }
     }
     const payload = { startedAt: now, expiresAt: now + LOCK_TTL_MS };

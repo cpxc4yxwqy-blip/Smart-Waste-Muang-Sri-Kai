@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { LayoutDashboard, FilePlus, FileText, Leaf, ChevronRight, Bookmark, Users, RotateCcw, RefreshCw, Download, Upload, Settings, Key, X, Save, Bell, Smartphone, Database, AlertTriangle, Wifi } from 'lucide-react';
 import GoogleSheetsSettings from './GoogleSheetsSettings';
 import AuditLogViewer from './AuditLogViewer';
-import { getPendingCount, getPendingRecords, getSyncStatus, flushPendingRecords, pingWebApp, getWebHealth } from '../services/googleSheetsService';
+import { getPendingCount, getPendingRecords, getSyncStatus, flushPendingRecords, pingWebApp, getWebHealth, isLockStuck, clearStuckLock } from '../services/googleSheetsService';
 
 interface SidebarProps {
   currentView: string;
@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
   const [pendingPreview, setPendingPreview] = useState<any[]>([]);
   const [webHealth, setWebHealth] = useState<any>(null);
   const [syncStatus, setSyncStatus] = useState(() => getSyncStatus());
+  const [lockStuck, setLockStuck] = useState<boolean>(() => isLockStuck());
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     setPendingPreview(getPendingRecords().slice(0, 3));
     setSyncStatus(getSyncStatus());
     setWebHealth(getWebHealth());
+    setLockStuck(isLockStuck());
   };
 
   useEffect(() => {
@@ -143,6 +145,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       alert(`Ping ไม่สำเร็จ: ${msg}`);
+    }
+  };
+
+  const handleClearStuckLock = () => {
+    if (confirm('พบ lock ค้าง คุณต้องการลบเพื่อเปิดใช้การซิงค์ใหม่ไหม?')) {
+      clearStuckLock();
+      setLockStuck(false);
+      refreshSyncMeta();
+      alert('ลบ lock สำเร็จ สามารถซิงค์ได้แล้ว');
     }
   };
 
@@ -340,7 +351,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                   <div className="text-[9px] text-slate-500">คิวค้าง</div>
                   <div className="font-semibold text-slate-800">{pendingCount} รายการ</div>
                 </div>
-                {pendingCount > 0 ? <AlertTriangle size={14} className="text-amber-500" /> : <ChevronRight size={12} className="text-slate-300" />}
+                {lockStuck ? <AlertTriangle size={14} className="text-red-500" /> : pendingCount > 0 ? <AlertTriangle size={14} className="text-amber-500" /> : <ChevronRight size={12} className="text-slate-300" />}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
@@ -357,6 +368,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 <div className="line-clamp-2 text-[10px]">{syncStatus.lastMessage || '—'}</div>
               </div>
             </div>
+            {lockStuck && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-2 flex items-start gap-2 mb-2">
+                <AlertTriangle size={14} className="text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-[10px] text-red-700">
+                  <div className="font-bold mb-1">⚠️ Lock ค้าง</div>
+                  <p className="mb-2">ระบบซิงค์ติดค้าง ให้กดปุ่มลบเพื่อเปิดใช้การซิงค์ใหม่</p>
+                </div>
+              </div>
+            )}
             {pendingPreview.length > 0 && (
               <div className="bg-white/80 border border-slate-100 rounded-xl p-2 space-y-1 max-h-24 overflow-y-auto custom-scrollbar">
                 {pendingPreview.map((item, idx) => (
@@ -392,10 +412,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 ส่งคิวค้าง
               </button>
               <button
-                onClick={handlePingWebApp}
-                className="text-[11px] font-bold px-2 py-2 rounded-xl bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100 flex items-center justify-center gap-1"
+                onClick={lockStuck ? handleClearStuckLock : handlePingWebApp}
+                className={`text-[11px] font-bold px-2 py-2 rounded-xl flex items-center justify-center gap-1 ${
+                  lockStuck 
+                    ? 'bg-red-600 text-white hover:bg-red-700 border border-red-700'
+                    : 'bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100'
+                }`}
               >
-                Ping Web App
+                {lockStuck ? '🔓 ลบ' : 'Ping Web App'}
               </button>
             </div>
           </div>
