@@ -188,6 +188,18 @@ function App() {
       } catch (error) {
         console.error('Failed to sync Google Sheets (attempt', attempt + 1, '):', error);
         const msg = error instanceof Error ? error.message : String(error);
+
+        // ถ้ากำลังมีการซิงค์/flush อยู่แล้ว ให้ข้ามและไม่ถือเป็นความล้มเหลว
+        if (msg.includes('กำลังซิงค์อยู่แล้ว') || msg.toLowerCase().includes('already') && msg.toLowerCase().includes('sync')) {
+          addAuditLog('AUTO_SYNC_SKIP', 'ข้าม auto-sync เพราะมีการซิงค์อื่นทำงานอยู่ (lock)', 'System');
+          setSyncStatus(getSyncStatus());
+          setPendingCount(getPendingCount());
+          if (!silentMode) {
+            setToast({ visible: true, message: 'ข้ามการซิงค์: กำลังซิงค์อยู่แล้ว', type: 'info', isLoading: false, duration: 2000 });
+          }
+          return;
+        }
+
         // If we have more attempts left, backoff and retry
         if (attempt < maxRetries - 1) {
           const jitter = Math.floor(Math.random() * 300);
