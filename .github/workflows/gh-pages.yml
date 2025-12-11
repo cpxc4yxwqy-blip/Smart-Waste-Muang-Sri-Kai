@@ -32,6 +32,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify dist folder
+        run: |
+          echo "Checking dist folder contents..."
+          ls -la dist/
+          echo "Total files in dist:"
+          find dist -type f | wc -l
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
