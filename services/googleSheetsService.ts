@@ -9,7 +9,7 @@ const LOCK_KEY = 'googleSheetsSyncLock';
 const WEB_HEALTH_KEY = 'googleSheetsWebHealth';
 
 export const DEFAULT_SPREADSHEET_ID = '1234567890abcdef'; // placeholder
-export const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+export const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzlKvxGHVocLnSzBtu2Vuvb0uAbZVYYKVWki1sPq7ksNvfCwVwxjOxBYoRp4L9cdog/exec';
 
 interface SheetConfig {
   spreadsheetId: string;
@@ -267,7 +267,7 @@ export function setSpreadsheetId(spreadsheetId: string): void {
  * ดึง Spreadsheet ID ปัจจุบัน
  */
 export function getSpreadsheetId(): string {
-  return localStorage.getItem('googleSheetsSpreadsheetId') || '';
+  return localStorage.getItem('googleSheetsSpreadsheetId') || DEFAULT_SPREADSHEET_ID;
 }
 
 /**
@@ -386,7 +386,6 @@ function isNetworkError(error: any): boolean {
  */
 export async function saveRecordToSheets(record: WasteRecord): Promise<boolean> {
   const spreadsheetId = getSpreadsheetId();
-  const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzlKvxGHVocLnSzBtu2Vuvb0uAbZVYYKVWki1sPq7ksNvfCwVwxjOxBYoRp4L9cdog/exec';
   const webAppUrl = (localStorage.getItem('googleSheetsWebAppUrl') || DEFAULT_WEB_APP_URL).trim();
 
   if (!webAppUrl) {
