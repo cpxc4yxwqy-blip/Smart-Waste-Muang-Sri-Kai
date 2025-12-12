@@ -7,6 +7,8 @@ import { getPendingCount, getPendingRecords, getSyncStatus, flushPendingRecords,
 
 // Feature flag: hide Sync Health UI
 const SHOW_SYNC_HEALTH = false;
+// Feature flag: hide action buttons inside Sync Health (Flush/Ping)
+const SHOW_SYNC_ACTIONS = false;
 
 interface SidebarProps {
   currentView: string;
@@ -410,22 +412,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
               >
                 ซิงค์ทันที
               </button>
-              <button
-                onClick={handleFlushPending}
-                className="text-[11px] font-bold px-2 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100"
-              >
-                ส่งคิวค้าง
-              </button>
-              <button
-                onClick={lockStuck ? handleClearStuckLock : handlePingWebApp}
-                className={`text-[11px] font-bold px-2 py-2 rounded-xl flex items-center justify-center gap-1 ${
-                  lockStuck 
-                    ? 'bg-red-600 text-white hover:bg-red-700 border border-red-700'
-                    : 'bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100'
-                }`}
-              >
-                {lockStuck ? '🔓 ลบ' : 'Ping Web App'}
-              </button>
+              {SHOW_SYNC_ACTIONS && (
+                <>
+                  <button
+                    onClick={handleFlushPending}
+                    className="text-[11px] font-bold px-2 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100"
+                  >
+                    ส่งคิวค้าง
+                  </button>
+                  <button
+                    onClick={lockStuck ? handleClearStuckLock : handlePingWebApp}
+                    className={`text-[11px] font-bold px-2 py-2 rounded-xl flex items-center justify-center gap-1 ${
+                      lockStuck 
+                        ? 'bg-red-600 text-white hover:bg-red-700 border border-red-700'
+                        : 'bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100'
+                    }`}
+                  >
+                    {lockStuck ? '🔓 ลบ' : 'Ping Web App'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
