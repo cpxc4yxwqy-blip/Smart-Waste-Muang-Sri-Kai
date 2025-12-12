@@ -5,6 +5,9 @@ import GoogleSheetsSettings from './GoogleSheetsSettings';
 import AuditLogViewer from './AuditLogViewer';
 import { getPendingCount, getPendingRecords, getSyncStatus, flushPendingRecords, pingWebApp, getWebHealth, isLockStuck, clearStuckLock } from '../services/googleSheetsService';
 
+// Feature flag: hide Sync Health UI
+const SHOW_SYNC_HEALTH = false;
+
 interface SidebarProps {
   currentView: string;
   setView: (view: string) => void;
@@ -64,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
   }, [expandedSection]);
 
   const refreshSyncMeta = () => {
+    if (!SHOW_SYNC_HEALTH) return;
     setPendingCount(getPendingCount());
     setPendingPreview(getPendingRecords().slice(0, 3));
     setSyncStatus(getSyncStatus());
@@ -319,7 +323,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
           })}
         </nav>
 
-        {/* Sync Health */}
+        {/* Sync Health (disabled) */}
+        {SHOW_SYNC_HEALTH && (
         <div className="px-2 pb-2">
           <div className="rounded-2xl border border-emerald-100 bg-white/70 shadow-inner shadow-emerald-50 p-3 space-y-2">
             <div className="flex items-center justify-between">
@@ -424,6 +429,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
             </div>
           </div>
         </div>
+        )}
 
         {/* Footer Tools */}
         <div 
