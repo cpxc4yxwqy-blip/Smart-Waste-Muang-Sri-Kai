@@ -95,12 +95,12 @@ function App() {
     
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement('a') as HTMLAnchorElement;
     link.href = url;
     link.download = `waste_smart_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
+    (document as any).body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    (document as any).body.removeChild(link);
     analytics.backupDownloaded(records.length);
   };
 
@@ -258,7 +258,7 @@ function App() {
       if (!enabled) return;
       const ms = Math.max(1, minutes) * 60 * 1000;
       intervalId = setInterval(async () => {
-        if (document.hidden || isDataSaver) return; // pause when not visible or data-saver
+        if ((document as any).hidden || isDataSaver) return; // pause when not visible or data-saver
         if (isRunning) return;
         isRunning = true;
         try {
@@ -272,7 +272,7 @@ function App() {
     startAutoSync();
 
     const onVisibility = () => {
-      if (!document.hidden && !isDataSaver) {
+      if (!(document as any).hidden && !isDataSaver) {
         // resume immediate sync when user returns (unless data-saver on)
         handleSyncGoogleSheets().catch(() => {});
       }

@@ -1,3 +1,5 @@
+import type { WasteRecord } from '../types';
+
 const CIRCUIT_THRESHOLD = 3;
 const CIRCUIT_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
 const LOCK_TTL_MS = 2 * 60 * 1000; // 2 minutes
